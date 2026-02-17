@@ -154,6 +154,9 @@ class MyAxes:
     def _set_axis_dimensions(
         self, aspect_num: float | None, xlim: list[float], ylim: list[float]
     ) -> None:
+        if aspect_num == 1.0:
+            # Equal aspect (e.g. set_aspect("equal")): ensure circles appear round
+            self.data.current_axis_options.add("axis equal image")
         if self.data.axis_width and self.data.axis_height:
             # width and height overwrite aspect ratio
             self.data.current_axis_options.add("width=" + self.data.axis_width)
