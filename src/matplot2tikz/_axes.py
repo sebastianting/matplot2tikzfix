@@ -352,10 +352,7 @@ class MyAxes:
             for extra in self.data.extra_axis_parameters:
                 if "=" in extra:
                     key = extra.split("=", 1)[0].strip()
-                    default_opts = {
-                        o for o in default_opts
-                        if o.split("=", 1)[0].strip() != key
-                    }
+                    default_opts = {o for o in default_opts if o.split("=", 1)[0].strip() != key}
             # Output defaults first, then extra (deterministic order to avoid diff churn).
             all_opts = sorted(default_opts) + sorted(self.data.extra_axis_parameters)
             self.content.append("[\n" + ",\n".join(all_opts) + "\n]\n")
