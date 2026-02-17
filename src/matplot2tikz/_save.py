@@ -460,10 +460,6 @@ def _process_axes(data: TikzData, obj: Axes, content: _ContentManager) -> None:
     if ax.is_colorbar:
         return
 
-    # add extra axis options
-    if data.extra_axis_parameters:
-        data.current_axis_options.update(data.extra_axis_parameters)
-
     data.current_mpl_axes = obj
 
     # Run through the child objects, gather the content.

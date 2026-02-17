@@ -345,11 +345,20 @@ class MyAxes:
             self.content.append(self.data.flavor.start("axis"))
 
     def get_begin_code(self) -> list[str]:
-        if self.data.current_axis_options:
-            # Put axis_options in a deterministic order to avoid diff churn.
-            self.content.append(
-                "[\n" + ",\n".join(sorted(self.data.current_axis_options)) + "\n]\n"
-            )
+        if self.data.current_axis_options or self.data.extra_axis_parameters:
+            # Apply extra_axis_parameters after defaults so they override (e.g. height=custom
+            # overrides height=default). Remove from defaults any option whose key conflicts.
+            default_opts = set(self.data.current_axis_options)
+            for extra in self.data.extra_axis_parameters:
+                if "=" in extra:
+                    key = extra.split("=", 1)[0].strip()
+                    default_opts = {
+                        o for o in default_opts
+                        if o.split("=", 1)[0].strip() != key
+                    }
+            # Output defaults first, then extra (deterministic order to avoid diff churn).
+            all_opts = sorted(default_opts) + sorted(self.data.extra_axis_parameters)
+            self.content.append("[\n" + ",\n".join(all_opts) + "\n]\n")
         return self.content
 
     def get_end_code(self) -> str:
