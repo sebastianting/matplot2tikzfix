@@ -9,6 +9,7 @@ import numpy as np
 from matplotlib.dates import DateConverter, num2date
 from matplotlib.lines import Line2D, _get_dash_pattern  # type: ignore[attr-defined]
 from matplotlib.markers import MarkerStyle
+from matplotlib.patches import Circle, Ellipse, Rectangle
 from matplotlib.path import Path
 
 if TYPE_CHECKING:
@@ -145,6 +146,104 @@ def draw_path(
     path_command = "\\path {}\n{};\n".format(do, "\n".join(nodes))
 
     return path_command, is_area
+
+
+def _clip_circle(clip_path: Circle, ff: str) -> str:
+    """Generate TikZ clip command for Circle patch."""
+    x, y = clip_path.center
+    radius = clip_path.get_radius()
+    return f"\\clip (axis cs:{x:{ff}},{y:{ff}}) circle ({radius:{ff}});\n"
+
+
+def _clip_rectangle(clip_path: Rectangle, ff: str) -> str:
+    """Generate TikZ clip command for Rectangle patch."""
+    x1 = clip_path.get_x()
+    y1 = clip_path.get_y()
+    x2 = x1 + clip_path.get_width()
+    y2 = y1 + clip_path.get_height()
+    return f"\\clip (axis cs:{x1:{ff}},{y1:{ff}}) rectangle (axis cs:{x2:{ff}},{y2:{ff}});\n"
+
+
+def _clip_ellipse(clip_path: Ellipse, ff: str) -> str:
+    """Generate TikZ clip command for Ellipse patch."""
+    x, y = clip_path.center
+    rx = 0.5 * clip_path.width
+    ry = 0.5 * clip_path.height
+
+    if clip_path.angle != 0:
+        return (
+            f"\\clip[rotate around={{{clip_path.angle:{ff}}:(axis cs:{x:{ff}},{y:{ff}})}}] "
+            f"(axis cs:{x:{ff}},{y:{ff}}) ellipse ({rx:{ff}} and {ry:{ff}});\n"
+        )
+    return f"\\clip (axis cs:{x:{ff}},{y:{ff}}) ellipse ({rx:{ff}} and {ry:{ff}});\n"
+
+
+def _clip_path(data: TikzData, path: Path) -> str:
+    """Generate TikZ clip command for generic Path object."""
+    ff = data.float_format
+    x_is_date = _check_x_is_date(data)
+    xformat = "" if x_is_date else ff
+    nodes = []
+
+    for vert, code in path.iter_segments(simplify=False):
+        if code == Path.MOVETO:
+            nodes.append(
+                f"(axis cs:{vert[0] if not x_is_date else num2date(vert[0]):{xformat}},"
+                f"{vert[1]:{ff}})"
+            )
+        elif code == Path.LINETO:
+            nodes.append(
+                f"--(axis cs:{vert[0] if not x_is_date else num2date(vert[0]):{xformat}},"
+                f"{vert[1]:{ff}})"
+            )
+        elif code == Path.CLOSEPOLY:
+            nodes.append("--cycle")
+
+    # Ensure the path is closed
+    if nodes and nodes[-1] != "--cycle":
+        nodes.append("--cycle")
+
+    return f"\\clip {' '.join(nodes)};\n" if nodes else ""
+
+
+def convert_clip_path(
+    data: TikzData,
+    clip_path: Path | Patch,
+) -> str:
+    r"""Convert a matplotlib clip path (Patch or Path) to TikZ \clip command.
+
+    Args:
+        data: TikzData object containing formatting information
+        clip_path: The matplotlib Path or Patch object to use as clip path
+
+    Returns:
+        TikZ clip command string (e.g., r"\clip (axis cs:0,0) circle (1);\n")
+    """
+    ff = data.float_format
+
+    # Handle Circle patches
+    if isinstance(clip_path, Circle):
+        return _clip_circle(clip_path, ff)
+
+    # Handle Rectangle patches
+    if isinstance(clip_path, Rectangle):
+        return _clip_rectangle(clip_path, ff)
+
+    # Handle Ellipse patches (but not Circle, which is already handled above)
+    if isinstance(clip_path, Ellipse):
+        return _clip_ellipse(clip_path, ff)
+
+    # Handle generic Path objects or Patch with get_path()
+    if isinstance(clip_path, Path):
+        path = clip_path
+    elif hasattr(clip_path, "get_path"):
+        path = clip_path.get_path()
+        if hasattr(clip_path, "get_patch_transform"):
+            path = path.transformed(clip_path.get_patch_transform())
+    else:
+        return ""
+
+    return _clip_path(data, path)
 
 
 def _check_x_is_date(data: TikzData) -> bool:
