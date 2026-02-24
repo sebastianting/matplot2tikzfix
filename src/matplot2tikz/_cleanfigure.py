@@ -370,7 +370,6 @@ def _remove_nans(data: np.ndarray) -> np.ndarray:
 
     I.e., those at the end/beginning of the data and consecutive ones.
     """
-
     # do nothing if data is empty, as it would be after a call to clean_figure()
     if data.size == 0:
         return data
@@ -392,10 +391,8 @@ def _remove_nans(data: np.ndarray) -> np.ndarray:
     id_last = valid[-1]
 
     id_remove = np.concatenate(
-            [np.arange(0, id_first),
-            id_remove,
-            np.arange(id_last + 1, len(data))]
-            )
+        [np.arange(0, id_first), id_remove, np.arange(id_last + 1, len(data))]
+    )
 
     return np.delete(data, id_remove, axis=0)
 
