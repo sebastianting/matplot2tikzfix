@@ -370,28 +370,42 @@ def _remove_nans(data: np.ndarray) -> np.ndarray:
 
     I.e., those at the end/beginning of the data and consecutive ones.
     """
+    # do nothing if data is empty, as it would be after a call to clean_figure()
+    if data.size == 0:
+        return data
+
     id_nan = np.any(np.isnan(data), axis=1)
+
+    # Likewise guard against all rows being NaN
+    valid = np.argwhere(~id_nan).reshape((-1,))
+
+    if valid.size == 0:
+        return data[:0]
+
     id_remove = np.argwhere(id_nan).reshape((-1,))
-    if not _isempty(id_remove):
-        id_remove = id_remove[
-            np.concatenate([np.diff(id_remove, axis=0) == 1, np.array([False]).reshape((-1,))])
-        ]
+    if id_remove.size != 0:
+        consecutive = np.diff(id_remove) == 1
+        id_remove = id_remove[np.concatenate([consecutive, np.array([False])])]
 
-    id_first = np.argwhere(np.logical_not(id_nan))[0]
-    id_last = np.argwhere(np.logical_not(id_nan))[-1]
+    id_first = valid[0]
+    id_last = valid[-1]
 
-    if _isempty(id_first):
-        # remove entire data
-        id_remove = np.arange(len(data))
-    else:
-        id_remove = np.concatenate(
-            [np.arange(0, id_first[0]), id_remove, np.arange(id_last[0] + 1, len(data))]
-        )
+    id_remove = np.concatenate(
+        [np.arange(0, id_first), id_remove, np.arange(id_last + 1, len(data))]
+    )
+
     return np.delete(data, id_remove, axis=0)
+
+
+def _sorted_limits(lim: np.ndarray) -> np.ndarray:
+    """Return axis limits as [min, max] regardless of axis direction."""
+    return np.array([np.min(lim), np.max(lim)])
 
 
 def _is_in_box(data: np.ndarray, x_lim: np.ndarray, y_lim: np.ndarray) -> np.ndarray:
     """Returns a mask that indicates, whether a data point is within the limits."""
+    x_lim = _sorted_limits(x_lim)
+    y_lim = _sorted_limits(y_lim)
     mask_x = np.logical_and(data[:, 0] > x_lim[0], data[:, 0] < x_lim[1])
     mask_y = np.logical_and(data[:, 1] > y_lim[0], data[:, 1] < y_lim[1])
     return np.logical_and(mask_x, mask_y)
@@ -545,14 +559,15 @@ def _move_points_closer(y_lim: np.ndarray, data: np.ndarray) -> np.ndarray:
     # Calculate the extension of the extended box
     # (x_width not important for clipping, as it is already dealt with elsewhere (maybe by
     # matplotlib when lim() occurs))
-    y_width = y_lim[1] - y_lim[0]
+    y_min, y_max = _sorted_limits(y_lim)
+    y_width = y_max - y_min
 
     # Don't choose the larger box too large to make sure that the values inside
     # it can still be treated by TeX.
 
     extended_factor = 0.1
-    y_min_ext = y_lim[0] - extended_factor * y_width
-    y_max_ext = y_lim[1] + extended_factor * y_width
+    y_min_ext = y_min - extended_factor * y_width
+    y_max_ext = y_max + extended_factor * y_width
 
     # Copy data to avoid modifying original array
     clipped_data = np.array(data, copy=True)
@@ -607,8 +622,8 @@ def _simplify_line(cfd: CleanFigureData) -> np.ndarray:
 
     # Automatically guess a tol based on the area of the figure and
     # the area and resolution of the output
-    x_range = cfd.x_lim[1] - cfd.x_lim[0]
-    y_range = cfd.y_lim[1] - cfd.y_lim[0]
+    x_range = np.max(cfd.x_lim) - np.min(cfd.x_lim)
+    y_range = np.max(cfd.y_lim) - np.min(cfd.y_lim)
 
     # Conversion factors of data units into pixels
     x_to_pix = width / x_range
@@ -893,6 +908,8 @@ def _corners2d(
     x_lim: np.ndarray, y_lim: np.ndarray
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Determine the corners of the axes as defined by xLim and yLim."""
+    x_lim = _sorted_limits(x_lim)
+    y_lim = _sorted_limits(y_lim)
     bottom_left = np.array([x_lim[0], y_lim[0]])
     top_left = np.array([x_lim[0], y_lim[1]])
     bottom_right = np.array([x_lim[1], y_lim[0]])
@@ -904,6 +921,9 @@ def _corners3d(
     x_lim: list | np.ndarray, y_lim: list | np.ndarray, z_lim: list | np.ndarray
 ) -> np.ndarray:
     """Determine the corners of the 3D axes as defined by xLim, yLim and zLim."""
+    x_lim = _sorted_limits(np.array(x_lim))
+    y_lim = _sorted_limits(np.array(y_lim))
+    z_lim = _sorted_limits(np.array(z_lim))
     # Lower square of the cube
     lower_bottom_left = np.array([x_lim[0], y_lim[0], z_lim[0]])
     lower_top_left = np.array([x_lim[0], y_lim[1], z_lim[0]])
