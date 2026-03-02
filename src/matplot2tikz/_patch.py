@@ -197,10 +197,15 @@ def _draw_ellipse(data: TikzData, obj: Ellipse, draw_options: list) -> list[str]
     if obj.angle != 0:
         draw_options.append(f"rotate around={{{obj.angle:{ff}}:(axis cs:{x:{ff}},{y:{ff}})}}")
 
+    # Use bracket syntax with x radius/y radius for axis coordinate units (compat 1.5.1+).
+    # The parenthesis syntax (a and b) can be interpreted as physical units (pt) in some
+    # contexts, causing ellipses to be invisible or wrong size.
     do = ",".join(draw_options)
+    half_w = 0.5 * obj.width
+    half_h = 0.5 * obj.height
     content = [
         f"\\draw[{do}] (axis cs:{x:{ff}},{y:{ff}}) ellipse "
-        f"({0.5 * obj.width:{ff}} and {0.5 * obj.height:{ff}});\n"
+        f"[x radius={half_w:{ff}}, y radius={half_h:{ff}}];\n"
     ]
     content.append(_patch_legend(obj, draw_options, "area legend"))
 
@@ -208,12 +213,16 @@ def _draw_ellipse(data: TikzData, obj: Ellipse, draw_options: list) -> list[str]
 
 
 def _draw_circle(data: TikzData, obj: Circle, draw_options: list) -> list[str]:
-    """Return the PGFPlots code for circles."""
+    """Return the PGFPlots code for circles.
+
+    Use circle [radius=r] so the radius is in axis coordinate units (requires
+    pgfplots compat=1.5.1+). The older syntax circle (r) uses physical units (e.g. cm).
+    """
     x, y = obj.center
     ff = data.float_format
     do = ",".join(draw_options)
     return [
-        f"\\draw[{do}] (axis cs:{x:{ff}},{y:{ff}}) circle ({obj.get_radius():{ff}});\n",
+        f"\\draw[{do}] (axis cs:{x:{ff}},{y:{ff}}) circle [radius={obj.get_radius():{ff}}];\n",
         _patch_legend(obj, draw_options, "area legend"),
     ]
 
