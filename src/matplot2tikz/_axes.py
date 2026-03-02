@@ -195,7 +195,8 @@ class MyAxes:
         yaxis_pos = self.obj.get_yaxis().label_position
         if yaxis_pos == "right":
             # By default, y-axis position is "left"
-            self.data.current_axis_options.add("axis y line=right")
+            # Use axis y line*=right (no arrow) to match matplotlib, which has no axis arrows
+            self.data.current_axis_options.add("axis y line*=right")
 
     def _set_ticks(self) -> None:
         self._get_ticks()
