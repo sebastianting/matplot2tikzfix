@@ -70,18 +70,27 @@ def _legend_position_anchor(data: TikzData, obj: Legend, legend_style: list[str]
     # http://matplotlib.org/api/legend_api.html
     loc = obj._loc if obj._loc != 0 else _get_location_from_best(obj)  # type: ignore[attr-defined]  # noqa: SLF001
     pad = 0.03
-    position, anchor = {
-        1: (None, None),  # upper right
-        2: ([pad, 1.0 - pad], "north west"),  # upper left
-        3: ([pad, pad], "south west"),  # lower left
-        4: ([1.0 - pad, pad], "south east"),  # lower right
-        5: ([1.0 - pad, 0.5], "east"),  # right
-        6: ([3 * pad, 0.5], "west"),  # center left
-        7: ([1.0 - 3 * pad, 0.5], "east"),  # center right
-        8: ([0.5, 3 * pad], "south"),  # lower center
-        9: ([0.5, 1.0 - 3 * pad], "north"),  # upper center
-        10: ([0.5, 0.5], "center"),  # center
-    }[loc]
+    num_of_coordinates = 2  # x and y
+    # Handle loc=(x, y) tuple: coordinates for lower-left corner of legend in axes coords
+    if isinstance(loc, (tuple, list)) and len(loc) == num_of_coordinates:
+        try:
+            x, y = float(loc[0]), float(loc[1])
+            position, anchor = ([x, y], "south west")
+        except (TypeError, ValueError):
+            position, anchor = (None, None)
+    else:
+        position, anchor = {
+            1: (None, None),  # upper right
+            2: ([pad, 1.0 - pad], "north west"),  # upper left
+            3: ([pad, pad], "south west"),  # lower left
+            4: ([1.0 - pad, pad], "south east"),  # lower right
+            5: ([1.0 - pad, 0.5], "east"),  # right
+            6: ([3 * pad, 0.5], "west"),  # center left
+            7: ([1.0 - 3 * pad, 0.5], "east"),  # center right
+            8: ([0.5, 3 * pad], "south"),  # lower center
+            9: ([0.5, 1.0 - 3 * pad], "north"),  # upper center
+            10: ([0.5, 0.5], "center"),  # center
+        }[loc]
 
     # In case of given position via bbox_to_anchor parameter the center
     # of legend is changed as follows:
