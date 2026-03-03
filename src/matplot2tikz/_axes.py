@@ -187,10 +187,6 @@ class MyAxes:
                 self.data.current_axis_options.add("width=" + self.data.axis_width)
 
     def _set_axis_positions(self) -> None:
-        xaxis_pos = self.obj.get_xaxis().label_position
-        if xaxis_pos == "top":
-            # By default, x-axis position is "bottom"
-            self.data.current_axis_options.add("axis x line=top")
 
         yaxis_pos = self.obj.get_yaxis().label_position
         if yaxis_pos == "right":
@@ -458,9 +454,12 @@ class MyAxes:
             self.data.current_axis_options.add(y_tick_rotation_and_horizontal_alignment)
 
     def _set_tick_positions(self) -> None:
-        x_tick_position_string, x_tick_position = _get_tick_position(self.obj, "x")
-        y_tick_position_string, y_tick_position = _get_tick_position(self.obj, "y")
+        x_tick_position_string, x_tick_position = _get_effective_tick_position(self.obj, "x")
+        y_tick_position_string, y_tick_position = _get_effective_tick_position(self.obj, "y")
 
+        # When x-ticks are only on top (tick_top), use xtick pos=right only - do NOT
+        # use axis x line*=top, which would remove the bottom axis line. Matplotlib
+        # keeps the bottom axis line and only moves ticks to top.
         if x_tick_position == y_tick_position and x_tick_position is not None:
             self.data.current_axis_options.add(f"tick pos={x_tick_position}")
         else:
@@ -646,6 +645,43 @@ def _get_pgfplots_ticklabels(ticklabels: list) -> list[str]:
             label = "{" + label + "}"
         pgfplots_ticklabels.append(_common_texification(label))
     return pgfplots_ticklabels
+
+
+def _get_effective_tick_position(obj: Axes, x_or_y: str) -> tuple[str | None, str | None]:
+    """Get tick position, considering shared axes in twinx()/twiny() setups.
+
+    When axes are overlaid (twin) and share an axis, use the tick config from
+    any sibling so that tick_top()/tick_right() on one axis is reflected in all.
+    """
+    position_string, position = _get_tick_position(obj, x_or_y)
+
+    fig = obj.get_figure()
+    double_axis_threshold = 2
+    if fig is None or len(fig.axes) < double_axis_threshold:
+        return position_string, position
+
+    # Check overlaid siblings (same bbox) that share this axis
+    shared_getter = obj.get_shared_x_axes() if x_or_y == "x" else obj.get_shared_y_axes()
+    siblings = shared_getter.get_siblings(obj)
+
+    for sibling in siblings:
+        if sibling is obj:
+            continue
+        if _is_colorbar_heuristic(sibling):
+            continue
+        if sibling.bbox.bounds != obj.bbox.bounds:
+            continue  # Not overlaid (e.g. sharex subplots have different positions)
+
+        # Overlaid sibling shares this axis - use its tick position if more specific
+        _, sibling_pos = _get_tick_position(sibling, x_or_y)
+        if sibling_pos == "right":
+            position = "right"
+            position_string = f"{x_or_y}tick pos=right"
+        elif sibling_pos == "both" and position != "right":
+            position = "both"
+            position_string = f"{x_or_y}tick pos=both"
+
+    return position_string, position
 
 
 def _is_colorbar_heuristic(obj: Axes) -> bool:
