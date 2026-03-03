@@ -359,6 +359,14 @@ def _draw_pathcollection_scatter_colormap(data: TikzData, pcd: PathCollectionDat
         mycolormap, is_custom_cmap = _mpl_cmap2pgf_cmap(pcd.obj.get_cmap(), data)
         pcd.draw_options.append("scatter")
         pcd.draw_options.append("colormap" + ("=" if is_custom_cmap else "/") + mycolormap)
+        sizes_will_vary = len(pcd.obj.get_sizes()) == len(pcd.dd_strings)
+        if not sizes_will_vary:
+            edgecolors = pcd.obj.get_edgecolors()  # type: ignore[attr-defined]
+            if len(edgecolors) == 1 and edgecolors[0][3] > 0:
+                ec_name, _ = _color.mpl_color2xcolor(data, edgecolors[0])
+                pcd.draw_options.append(
+                    f"scatter/use mapped color={{draw={ec_name},fill=mapped color}}"
+                )
 
 
 def _draw_pathcollection_get_edgecolors(
