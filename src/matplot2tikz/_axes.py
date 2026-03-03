@@ -187,7 +187,6 @@ class MyAxes:
                 self.data.current_axis_options.add("width=" + self.data.axis_width)
 
     def _set_axis_positions(self) -> None:
-
         yaxis_pos = self.obj.get_yaxis().label_position
         if yaxis_pos == "right":
             # By default, y-axis position is "left"
