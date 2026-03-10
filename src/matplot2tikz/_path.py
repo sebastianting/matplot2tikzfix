@@ -301,7 +301,7 @@ def draw_pathcollection(data: TikzData, obj: PathCollection) -> list[str]:
 
     for path in obj.get_paths():
         _draw_pathcollection_draw_contour(path, data, path_collection_data)
-        _draw_pathcollection_scatter_sizes(path_collection_data)
+        _draw_pathcollection_scatter_sizes(data, path_collection_data)
 
         # remove duplicates
         draw_options = sorted(set(path_collection_data.draw_options))
@@ -501,8 +501,13 @@ def _draw_pathcollection_draw_contour(path: Path, data: TikzData, pcd: PathColle
         pcd.dd_strings = np.array(dd_strings[1:], dtype=object)
 
 
-def _draw_pathcollection_scatter_sizes(pcd: PathCollectionData) -> None:
-    if len(pcd.obj.get_sizes()) == len(pcd.dd_strings):
+def _draw_pathcollection_scatter_sizes(data: TikzData, pcd: PathCollectionData) -> None:
+    sizes = pcd.obj.get_sizes()
+    n_sizes = len(sizes)
+    n_points = len(pcd.dd_strings)
+
+    if n_sizes == n_points:
+        # Variable sizes - per-point size
         # See Pgfplots manual, chapter 4.25.
         # In Pgfplots, \mark size specifies radii, in matplotlib circle areas.
         radii = np.sqrt(pcd.obj.get_sizes() / np.pi)
@@ -515,6 +520,13 @@ def _draw_pathcollection_scatter_sizes(pcd: PathCollectionData) -> None:
                 "scatter/@pre marker code/.append style={/tikz/mark size=\\perpointmarksize}",
             ]
         )
+    elif n_sizes > 0:
+        # Uniform size (scalar s=... or all same) - use fixed mark size
+        # When s=300 is passed, get_sizes() returns array([300]) with length 1
+        size = float(sizes.flat[0])
+        ff = data.float_format
+        radius_pt = np.sqrt(size / np.pi)
+        pcd.draw_options.append(f"mark size={radius_pt:{ff}}pt")
 
 
 def get_draw_options(data: TikzData, line_data: LineData) -> list[str]:
