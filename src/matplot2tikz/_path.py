@@ -367,6 +367,9 @@ def _draw_pathcollection_scatter_colormap(data: TikzData, pcd: PathCollectionDat
                 pcd.draw_options.append(
                     f"scatter/use mapped color={{draw={ec_name},fill=mapped color}}"
                 )
+    alpha = pcd.obj.get_alpha()
+    if alpha is not None and alpha < 1.0:
+        pcd.draw_options.append(f"opacity={alpha:{data.float_format}}")
 
 
 def _draw_pathcollection_get_edgecolors(
