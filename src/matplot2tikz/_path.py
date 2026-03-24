@@ -513,12 +513,34 @@ def _draw_pathcollection_scatter_sizes(data: TikzData, pcd: PathCollectionData) 
         radii = np.sqrt(pcd.obj.get_sizes() / np.pi)
         pcd.dd_strings = np.column_stack([pcd.dd_strings, radii])
         pcd.labels.append("sizedata")
-        pcd.draw_options.extend(
-            [
-                "visualization depends on=" + "{\\thisrow{sizedata} \\as\\perpointmarksize}",
-                "scatter",
-                "scatter/@pre marker code/.append style={/tikz/mark size=\\perpointmarksize}",
-            ]
+        # When scatter mode is active, top-level draw=/fill= options are ignored by pgfplots.
+        # If uniform colors are present, use .code with \scope to embed them alongside size.
+        # draw=/fill= are not valid in .append style, so we only switch to .code when needed.
+        size_options = [
+            "visualization depends on=" + "{\\thisrow{sizedata} \\as\\perpointmarksize}",
+            "scatter",
+        ]
+        if not pcd.add_individual_color_code and pcd.obj.get_array() is None:
+            edgecolors = pcd.obj.get_edgecolors()  # type: ignore[attr-defined]
+            facecolors = pcd.obj.get_facecolors()  # type: ignore[attr-defined]
+            if len(edgecolors) == 1 and len(facecolors) <= 1:
+                ec_name, _ = _color.mpl_color2xcolor(data, edgecolors[0])
+                if len(facecolors) == 0 or facecolors[0][3] == 0:
+                    fc_part = "none"
+                else:
+                    fc_part = _color.mpl_color2xcolor(data, facecolors[0])[0]
+                size_options.extend([
+                    "scatter/@pre marker code/.code={%\n"
+                    f"  \\scope[draw={ec_name}, fill={fc_part}]%\n"
+                    "  \\pgfset{/tikz/mark size=\\perpointmarksize}%\n"
+                    "}",
+                    "scatter/@post marker code/.code={%\n  \\endscope\n}",
+                ])
+                pcd.draw_options.extend(size_options)
+                return
+        pcd.draw_options.extend(size_options)
+        pcd.draw_options.append(
+            "scatter/@pre marker code/.append style={/tikz/mark size=\\perpointmarksize}"
         )
     elif n_sizes > 0:
         # Uniform size (scalar s=... or all same) - use fixed mark size
