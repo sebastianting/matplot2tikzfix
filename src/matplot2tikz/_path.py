@@ -529,13 +529,15 @@ def _draw_pathcollection_scatter_sizes(data: TikzData, pcd: PathCollectionData) 
                     fc_part = "none"
                 else:
                     fc_part = _color.mpl_color2xcolor(data, facecolors[0])[0]
-                size_options.extend([
-                    "scatter/@pre marker code/.code={%\n"
-                    f"  \\scope[draw={ec_name}, fill={fc_part}]%\n"
-                    "  \\pgfset{/tikz/mark size=\\perpointmarksize}%\n"
-                    "}",
-                    "scatter/@post marker code/.code={%\n  \\endscope\n}",
-                ])
+                size_options.extend(
+                    [
+                        "scatter/@pre marker code/.code={%\n"
+                        f"  \\scope[draw={ec_name}, fill={fc_part}]%\n"
+                        "  \\pgfset{/tikz/mark size=\\perpointmarksize}%\n"
+                        "}",
+                        "scatter/@post marker code/.code={%\n  \\endscope\n}",
+                    ]
+                )
                 pcd.draw_options.extend(size_options)
                 return
         pcd.draw_options.extend(size_options)
