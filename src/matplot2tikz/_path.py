@@ -575,9 +575,7 @@ def _draw_pathcollection_scatter_sizes(data: TikzData, pcd: PathCollectionData) 
             )
         elif has_variable_linewidths:
             # For variable linewidths, use .code
-            size_mark_str = (
-                "\\perpointmarksize pt" if has_variable_sizes else "\\perpointmarksize"
-            )
+            size_mark_str = "\\perpointmarksize pt" if has_variable_sizes else "\\perpointmarksize"
             pcd.draw_options.append(
                 f"scatter/@pre marker code/.code={{%\n"
                 f"  \\pgfsetlinewidth{{\\perpointlinewidth pt}}%\n"
