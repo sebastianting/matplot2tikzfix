@@ -3,6 +3,7 @@
 from .__about__ import __version__
 from ._cleanfigure import clean_figure
 from ._save import Flavors, get_tikz_code, save
+from ._compare import compare
 
 __all__ = [
     "Flavors",
@@ -10,4 +11,5 @@ __all__ = [
     "clean_figure",
     "get_tikz_code",
     "save",
+    "compare"
 ]
