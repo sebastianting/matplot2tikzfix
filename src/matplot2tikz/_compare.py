@@ -31,7 +31,7 @@ def compare(figure):
     # Create a temporary directory to show the image
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
-        
+
         # TikZ file paths
         tikz_tex_file = temp_path / "tikz_figure.tex"
         tikz_pdf_file = temp_path / "tikz_figure.pdf"
@@ -65,13 +65,8 @@ def compare(figure):
                 str(temp_path),
                 str(tikz_tex_file),
             ]
-            
-            subprocess.run(
-                cmd,
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.PIPE
-            )
+
+            subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
             tikz_success = True
 
         except subprocess.CalledProcessError as e:
@@ -88,10 +83,10 @@ def compare(figure):
             comparison_tex = temp_path / "comparison.tex"
             with open(comparison_tex, "w", encoding="utf-8") as f:
                 f.write(_get_comparison_tex_template(mpl_pdf_file, tikz_pdf_file))
-            
+
             try:
                 subprocess.run(
-                   [
+                    [
                         pdflatex_path,
                         "-interaction=nonstopmode",
                         "-halt-on-error",
@@ -101,9 +96,9 @@ def compare(figure):
                     ],
                     check=True,
                     stdout=subprocess.DEVNULL,
-                    stderr=subprocess.PIPE
+                    stderr=subprocess.PIPE,
                 )
-                
+
                 # Move result to current directory and open
                 result_pdf = temp_path / "comparison.pdf"
                 if result_pdf.exists():
@@ -126,7 +121,7 @@ def _get_comparison_tex_template(mpl_path, tikz_path):
     # Escape Windows paths for LaTeX
     mpl_path_str = str(mpl_path).replace("\\", "/")
     tikz_path_str = str(tikz_path).replace("\\", "/")
-    
+
     return f"""\\documentclass[landscape]{{article}}
 \\usepackage{{graphicx}}
 \\usepackage{{geometry}}
@@ -157,7 +152,7 @@ def _convert_to_png(pdf_path, png_path):
     Convert a PDF file to a PNG file using available system tools.
     Tries pdftocairo, then ghostscript.
     """
-    
+
     if not pdf_path:
         print("Error: PDF path not specified.")
 
@@ -172,13 +167,10 @@ def _convert_to_png(pdf_path, png_path):
                 [pdftocairo, "-png", "-singlefile", str(pdf_path), str(png_path.with_suffix(""))],
                 check=True,
                 stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL
+                stderr=subprocess.DEVNULL,
             )
             return True
         except subprocess.CalledProcessError:
             print("Error: Render failed. This might be an issue with the new child process.")
     else:
         print("Error: Cairo renderer failed. It may not be installed.")
-
-    
-

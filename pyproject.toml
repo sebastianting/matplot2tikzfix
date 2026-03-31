@@ -62,6 +62,7 @@ line-length = 100
 src = ["src"]
 extend-exclude = [
     "conf.py",
+    "src/matplot2tikz/_compare.py",
 ]
 target-version = "py310"
 lint.select = ["ALL"]
@@ -99,8 +100,13 @@ exclude = [
     "venv.*/",
     "build/",
     "dist/",
+    "src/matplot2tikz/_compare.py",
 ]
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["matplot2tikz._compare"]
+ignore_errors = true
 
 [tool.pytest.ini_options]
 addopts = """

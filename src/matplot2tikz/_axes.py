@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Subplot
 from matplotlib.colors import Colormap, LinearSegmentedColormap, ListedColormap
+from matplotlib.ticker import ScalarFormatter
 
 from . import _color
 from ._util import _common_texification
@@ -367,11 +368,26 @@ class MyAxes:
         return ""
 
     def _get_ticks(self) -> None:
+        force_x_ticklabels = _uses_plain_scalar_tick_format(self.obj, "x")
+        force_y_ticklabels = _uses_plain_scalar_tick_format(self.obj, "y")
+
         self.data.current_axis_options.update(
-            _get_ticks(self.data, "x", self.obj.get_xticks(), self.obj.get_xticklabels())
+            _get_ticks(
+                self.data,
+                "x",
+                self.obj.get_xticks(),
+                self.obj.get_xticklabels(),
+                force_label_required=force_x_ticklabels,
+            )
         )
         self.data.current_axis_options.update(
-            _get_ticks(self.data, "y", self.obj.get_yticks(), self.obj.get_yticklabels())
+            _get_ticks(
+                self.data,
+                "y",
+                self.obj.get_yticks(),
+                self.obj.get_yticklabels(),
+                force_label_required=force_y_ticklabels,
+            )
         )
         self.data.current_axis_options.update(
             _get_ticks(
@@ -572,14 +588,21 @@ def _get_tick_position(obj: Axes, x_or_y: str) -> tuple[str | None, str | None]:
     return position_string, major_ticks_position
 
 
-def _get_ticks(data: TikzData, xy: str, ticks: list | np.ndarray, ticklabels: list) -> list[str]:
+def _get_ticks(
+    data: TikzData,
+    xy: str,
+    ticks: list | np.ndarray,
+    ticklabels: list,
+    *,
+    force_label_required: bool = False,
+) -> list[str]:
     """Gets a {'x','y'}, a number of ticks and ticks labels.
 
     Returns the necessary axis options for the given configuration.
     """
     axis_options = []
     is_minor = "minor" in xy
-    is_label_required = _is_label_required(ticks, ticklabels)
+    is_label_required = force_label_required or _is_label_required(ticks, ticklabels)
     pgfplots_ticklabels = _get_pgfplots_ticklabels(ticklabels)
 
     # PGFPlots does not support custom labels for minor ticks (e.g., "minor xticklabels"
@@ -608,7 +631,21 @@ def _get_ticks(data: TikzData, xy: str, ticks: list | np.ndarray, ticklabels: li
             sep = ("", ",", "") if length < max_line_length else ("\n  ", ",\n  ", "\n")
             string = sep[1].join(pgfplots_ticklabels)
             axis_options.append(f"{xy}ticklabels={{{sep[0]}{string}{sep[2]}}}")
+            # Keep plain scalar tick formatting from matplotlib by disabling
+            # PGFPlots' tick scaling multiplier (e.g., "x 10^10" label).
+            if force_label_required:
+                axis_options.append(f"scaled {xy} ticks=false")
     return axis_options
+
+
+def _uses_plain_scalar_tick_format(obj: Axes, x_or_y: str) -> bool:
+    """Return True when ticklabel_format(style='plain') is active on this axis."""
+    axis = obj.xaxis if x_or_y == "x" else obj.yaxis
+    formatter = axis.get_major_formatter()
+    if not isinstance(formatter, ScalarFormatter):
+        return False
+    # matplotlib ticklabel_format(style="plain") sets _scientific=False.
+    return not bool(getattr(formatter, "_scientific", True))
 
 
 def _is_label_required(ticks: list | np.ndarray, ticklabels: list) -> bool:

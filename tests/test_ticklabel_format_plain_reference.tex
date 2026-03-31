@@ -1,0 +1,51 @@
+\begin{tikzpicture}
+
+\definecolor{darkgray176}{RGB}{176,176,176}
+\definecolor{darkorange25512714}{RGB}{255,127,14}
+\definecolor{steelblue31119180}{RGB}{31,119,180}
+
+\begin{axis}[
+height=4.5in,
+scaled x ticks=false,
+scaled y ticks=false,
+tick align=outside,
+tick pos=left,
+width=8in,
+x grid style={darkgray176},
+xmin=1916, xmax=2004,
+xtick style={color=black},
+xtick={1920,1940,1960,1980,2000},
+xticklabels={1920,1940,1960,1980,2000},
+y grid style={darkgray176},
+ymin=5.9e+09, ymax=3.01e+10,
+ytick style={color=black},
+ytick={5e+09,1e+10,1.5e+10,2e+10,2.5e+10,3e+10,3.5e+10},
+yticklabels={
+  5000000000,
+  10000000000,
+  15000000000,
+  20000000000,
+  25000000000,
+  30000000000,
+  35000000000
+}
+]
+\addplot [semithick, steelblue31119180, mark=*, mark size=3, mark options={solid}]
+table {%
+1920 8e+09
+1940 1e+10
+1960 1.3e+10
+1980 1.8e+10
+2000 2.4e+10
+};
+\addplot [semithick, darkorange25512714, mark=*, mark size=3, mark options={solid}]
+table {%
+1920 7e+09
+1940 9.5e+09
+1960 1.4e+10
+1980 2.1e+10
+2000 2.9e+10
+};
+\end{axis}
+
+\end{tikzpicture}
