@@ -4,12 +4,13 @@ from ._tikzdata import TikzData
 
 
 def _gen_filepath(data: TikzData, nb_key: str, ext: str) -> tuple[Path, Path]:
-    rel_filepath = Path(f"{data.base_name}-{data.nb_keys[nb_key]:03d}{ext}")
+    filename = Path(f"{data.base_name}-{data.nb_keys[nb_key]:03d}{ext}")
+    rel_filepath = filename
 
     if data.rel_data_path:
-        rel_filepath = data.rel_data_path / rel_filepath
+        rel_filepath = data.rel_data_path / filename
 
-    return data.output_dir / rel_filepath, rel_filepath
+    return data.output_dir / filename, rel_filepath
 
 
 def new_filepath(data: TikzData, file_kind: str, ext: str) -> tuple[Path, Path]:
